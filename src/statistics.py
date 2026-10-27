@@ -6,8 +6,6 @@ def calculate_production_statistics(
 ) -> pd.DataFrame:
     """
     Calculate descriptive statistics for each mine and for total daily production.
-        Input: A DataFrame with a 'Date' column and one numeric column for each mine.
-        Returns: A DataFrame containing: observation count, mean, standard deviation, median, Q1, Q3, IQR, minimum, and maximum production.
     """
     if "Date" not in df.columns:
         raise ValueError("The DataFrame must contain a 'Date' column.")

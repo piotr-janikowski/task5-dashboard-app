@@ -1,68 +1,44 @@
 import streamlit as st
-from src.data_loader import load_production_data
-from src.statistics import calculate_production_statistics
 
-
-st.set_page_config(
-    page_title="Mine Production Analytics",
-    page_icon="⛏️",
-    layout="wide",
+from src.detection_tab import render_detection_tab
+from src.overview import (
+    add_total_column,
+    configure_page,
+    get_production_columns,
+    load_data_or_stop,
+    render_overview,
+    render_refresh_bar,
 )
+from src.production_chart import render_production_chart
+from src.report_section import render_report_section
+from src.statistics_tab import render_statistics_tab
+from src.summary_tab import render_summary_tab
 
-st.title("⛏️ Mine Production Analytics")
-st.caption("Daily production monitoring and anomaly detection")
+configure_page()
 
-try:
-    df = load_production_data()
-except Exception as error:
-    st.error(f"Could not load production data: {error}")
-    st.stop()
+df = load_data_or_stop()
+render_refresh_bar()
 
-col1, col2 = st.columns([1, 5])
-with col1:
-    if st.button("🔄 Refresh data"):
-        st.cache_data.clear()
-        st.rerun()
-with col2:
-    st.caption("Data source: Google Sheets")
+production_columns = get_production_columns(df)
+add_total_column(df, production_columns)
+mines_df = df[["Date"] + production_columns]
 
-production_columns = [column for column in df.columns if column != "Date"]
-total_records = len(df)
-mine_count = len(production_columns)
-start_date = df["Date"].min().strftime("%Y-%m-%d")
-end_date = df["Date"].max().strftime("%Y-%m-%d")
+render_overview(df, production_columns)
+render_production_chart(df=df, production_columns=production_columns)
 
-metric1, metric2, metric3, metric4 = st.columns(4)
-metric1.metric("Daily records", total_records)
-metric2.metric("Number of mines", mine_count)
-metric3.metric("Start date", start_date)
-metric4.metric("End date", end_date)
+statistics_tab, detection_tab, summary_tab = st.tabs([
+    "Production Statistics",
+    "Anomaly Detection",
+    "Anomaly Summary",
+])
 
-st.divider()
-st.subheader("Daily Production Data")
-production_columns = [
-    column for column in df.columns
-    if column != "Date"
-]
-df_display = df.copy()
-df_display.insert(1, "In total", df_display[production_columns].sum(axis=1, min_count=1))
-st.dataframe(df_display, use_container_width=True, hide_index=True)
+with statistics_tab:
+    render_statistics_tab(mines_df)
 
+with detection_tab:
+    render_detection_tab(df, production_columns)
 
-st.subheader("Production Statistics")
-statistics = calculate_production_statistics(df)
-st.dataframe(statistics.style.format(
-    {
-        "Mean": "{:.2f}",
-        "Standard Deviation": "{:.2f}",
-        "Median": "{:.2f}",
-        "Q1": "{:.2f}",
-        "Q3": "{:.2f}",
-        "IQR": "{:.2f}",
-        "Minimum": "{:.2f}",
-        "Maximum": "{:.2f}",
-    },
-    na_rep="-"
-    ), 
-    use_container_width=True,
-)
+with summary_tab:
+    render_summary_tab(mines_df)
+
+render_report_section(mines_df)

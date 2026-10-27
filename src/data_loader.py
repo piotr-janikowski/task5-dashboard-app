@@ -5,6 +5,7 @@ import streamlit as st
 SPREADSHEET_ID = "1FTkIlAqUrMlHkkESgFCqJqKZKmcNiBQCxD6FPZUhm_A"
 SHEET_NAME = "Visualisation"
 
+@st.cache_data(ttl=300)
 def load_production_data() -> pd.DataFrame:
     """
     Download data from the public Google Sheet using the Google Sheets API.
